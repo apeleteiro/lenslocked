@@ -4,38 +4,38 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"html/template"
+	"log"
 	"net/http"
+	"path/filepath"
 )
 
-func homeHandler(w http.ResponseWriter, _ *http.Request) {
+func executeTemplate(w http.ResponseWriter, filePath string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = fmt.Fprint(w, "<h1>Welcome to my awesome site!</h1>")
+	tpl, err := template.ParseFiles(filePath)
+	if err != nil {
+		log.Printf("error parsing template: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	err = tpl.Execute(w, nil)
+	if err != nil {
+		log.Printf("error executing template: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+}
+
+func homeHandler(w http.ResponseWriter, _ *http.Request) {
+	executeTemplate(w, filepath.Join("templates", "home.gohtml"))
 }
 
 func contactHandler(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = fmt.Fprint(w, "<h1>Contact Page</h1><p>To get in touch, email me at <a href=\"mailto:jon@calhoun.io\">jon@calhoun.io</a>.</p>")
+	executeTemplate(w, filepath.Join("templates", "contact.gohtml"))
 }
 
 func faqHandler(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = fmt.Fprint(w, `<h1>FAQ Page</h1>
-<ul>
-  <li>
-    <b>Is there a free version?</b>
-    Yes! We offer a free trial for 30 days on any paid plans.
-  </li>
-  <li>
-    <b>What are your support hours?</b>
-    We have support staff answering emails 24/7, though response
-    times may be a bit slower on weekends.
-  </li>
-  <li>
-    <b>How do I contact support?</b>
-    Email us - <a href="mailto:support@lenslocked.com">support@lenslocked.com</a>
-  </li>
-</ul>
-`)
+	executeTemplate(w, filepath.Join("templates", "faq.gohtml"))
 }
 
 func main() {
