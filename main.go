@@ -1,7 +1,9 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
+	"github.com/gorilla/csrf"
 	"lenslocked/controllers"
 	"lenslocked/models"
 	"lenslocked/templates"
@@ -33,7 +35,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer db.Close()
+	defer func(db *sql.DB) {
+		_ = db.Close()
+	}(db)
 
 	userService := models.UserService{DB: db}
 
@@ -46,13 +50,16 @@ func main() {
 	r.Post("/users", usersC.Create)
 	r.Get("/signin", usersC.SignIn)
 	r.Post("/signin", usersC.ProcessSignIn)
+	r.Get("/users/me", usersC.CurrentUser)
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 	})
 
 	fmt.Println("Starting the server on :3000...")
-	err = http.ListenAndServe(":3000", r)
+	csrfKey := "gFvi45R4fy5xNBlnEeZtQbfAVCYEIAUX"
+	csrfMiddleware := csrf.Protect([]byte(csrfKey), csrf.Secure(false))
+	err = http.ListenAndServe(":3000", csrfMiddleware(r))
 	if err != nil {
 		fmt.Println(err)
 		return
